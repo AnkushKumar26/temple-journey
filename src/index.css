@@ -8,33 +8,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Spiritual Color Palette */
+    --background: 35 20% 98%;
+    --foreground: 20 14% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 20 14% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 20 14% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Sacred Saffron Primary */
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 25 100% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Divine Gold Secondary */
+    --secondary: 45 100% 51%;
+    --secondary-foreground: 20 14% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Temple Stone Muted */
+    --muted: 35 15% 94%;
+    --muted-foreground: 25 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Sacred Accent */
+    --accent: 220 60% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 25 95% 53%;
+
+    /* Sacred Gradients */
+    --gradient-divine: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-spiritual: linear-gradient(180deg, hsl(var(--background)), hsl(35 30% 92%));
+    --gradient-temple: linear-gradient(45deg, hsl(25 95% 53% / 0.1), hsl(45 100% 51% / 0.2));
+
+    /* Divine Shadows */
+    --shadow-divine: 0 20px 40px -10px hsl(var(--primary) / 0.3);
+    --shadow-ethereal: 0 10px 30px -5px hsl(var(--secondary) / 0.2);
+    --shadow-sacred: 0 0 50px hsl(var(--primary-glow) / 0.4);
+
+    /* Sacred Animations */
+    --transition-divine: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-float: transform 0.6s ease-in-out;
 
     --radius: 0.5rem;
 
