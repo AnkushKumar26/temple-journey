@@ -6,6 +6,8 @@ import { ArrowLeft, MapPin, Star, Sparkles } from "lucide-react";
 import somnathTemple from "@/assets/somnath-temple.jpg";
 import dwarkaTemple from "@/assets/dwarka-temple.jpg";
 import badrinathTemple from "@/assets/badrinath-temple.jpg";
+import ambajiTemple from "@/assets/ambaji-temple.jpg";
+import pavagardhTemple from "@/assets/pavagadh-temple.jpg";
 
 const temples = [
   {
@@ -34,6 +36,24 @@ const temples = [
     image: badrinathTemple,
     rating: 4.7,
     features: ["Himalayan Temple", "Char Dham", "High Altitude"]
+  },
+  {
+    id: "ambaji",
+    name: "Ambaji Temple",
+    location: "Gujarat, India",
+    description: "Sacred Shakti Peeth dedicated to Goddess Amba, known for its spiritual power and ancient traditions.",
+    image: ambajiTemple,
+    rating: 4.8,
+    features: ["Shakti Peeth", "Goddess Temple", "Ancient Heritage"]
+  },
+  {
+    id: "pavagadh",
+    name: "Pavagadh Temple",
+    location: "Gujarat, India",
+    description: "Historic hilltop temple complex with stunning views and deep spiritual significance.",
+    image: pavagardhTemple,
+    rating: 4.6,
+    features: ["Hilltop Temple", "Historic Site", "Scenic Views"]
   }
 ];
 

@@ -9,6 +9,8 @@ import { toast } from "@/hooks/use-toast";
 import somnathTemple from "@/assets/somnath-temple.jpg";
 import dwarkaTemple from "@/assets/dwarka-temple.jpg";
 import badrinathTemple from "@/assets/badrinath-temple.jpg";
+import ambajiTemple from "@/assets/ambaji-temple.jpg";
+import pavagardhTemple from "@/assets/pavagadh-temple.jpg";
 
 const temples = {
   somnath: {
@@ -25,6 +27,16 @@ const temples = {
     name: "Badrinath Temple",
     location: "Uttarakhand, India", 
     image: badrinathTemple,
+  },
+  ambaji: {
+    name: "Ambaji Temple",
+    location: "Gujarat, India",
+    image: ambajiTemple,
+  },
+  pavagadh: {
+    name: "Pavagadh Temple",
+    location: "Gujarat, India",
+    image: pavagardhTemple,
   }
 };
 
