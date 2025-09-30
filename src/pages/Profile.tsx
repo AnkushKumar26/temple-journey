@@ -8,11 +8,10 @@ import { ArrowLeft, User, Mail, Phone, Lock, Sparkles } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useUser();
+  const { user, login } = useUser();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -29,56 +28,22 @@ const Profile = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      if (!user) return;
-
-      // Update profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      if (user) {
+        login({
+          ...user,
           name: formData.name,
+          email: formData.email,
           phone: formData.phone
-        })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // Update password if provided
-      if (formData.newPassword) {
-        if (formData.newPassword !== formData.confirmPassword) {
-          throw new Error("Passwords do not match");
-        }
-
-        const { error: passwordError } = await supabase.auth.updateUser({
-          password: formData.newPassword
         });
-
-        if (passwordError) throw passwordError;
       }
-
-      await refreshUser();
-
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
-
-      // Clear password fields
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-    } catch (error: any) {
-      toast({
-        title: "Update Failed",
-        description: error.message || "Could not update profile",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const handleChange = (field: string, value: string) => {

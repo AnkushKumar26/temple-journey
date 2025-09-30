@@ -1,6 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState } from 'react';
 
 interface User {
   id: string;
@@ -26,90 +24,25 @@ interface Booking {
 interface UserContextType {
   user: User | null;
   bookings: Booking[];
-  session: Session | null;
-  loading: boolean;
-  logout: () => Promise<void>;
+  login: (userData: User) => void;
+  logout: () => void;
   addBooking: (booking: Omit<Booking, 'id' | 'qrCode' | 'createdAt'>) => void;
   updateBooking: (id: string, updates: Partial<Booking>) => void;
   isAuthenticated: boolean;
-  refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
-      const isAdmin = roles?.some(r => r.role === 'admin') || false;
-
-      if (profile) {
-        setUser({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          phone: profile.phone || '',
-          isAdmin
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    }
+  const login = (userData: User) => {
+    setUser(userData);
   };
 
-  const refreshUser = async () => {
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
-    if (currentSession?.user) {
-      await fetchUserProfile(currentSession.user.id);
-    }
-  };
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        setSession(currentSession);
-        if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id);
-        } else {
-          setUser(null);
-          setBookings([]);
-        }
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      if (currentSession?.user) {
-        fetchUserProfile(currentSession.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     setUser(null);
-    setSession(null);
     setBookings([]);
   };
 
@@ -137,14 +70,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <UserContext.Provider value={{
       user,
-      session,
       bookings,
-      loading,
+      login,
       logout,
       addBooking,
       updateBooking,
-      isAuthenticated: !!user,
-      refreshUser
+      isAuthenticated: !!user
     }}>
       {children}
     </UserContext.Provider>
