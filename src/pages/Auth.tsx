@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,45 +11,149 @@ import { toast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(3, "Password must be at least 3 characters")
+});
+
+const registerSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email address"),
+  phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(15, "Phone number too long"),
+  password: z.string().min(3, "Password must be at least 3 characters")
+});
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { refreshUser, isAuthenticated } = useUser();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [isAdminLogin, setIsAdminLogin] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent, type: 'login' | 'register') => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/temples');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    const formData = new FormData(e.target as HTMLFormElement);
-    const email = formData.get('email') as string;
-    const name = formData.get('name') as string || email.split('@')[0];
-    const phone = formData.get('phone') as string || '+91 9876543210';
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Create user object
-      const userData = {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        phone,
-        isAdmin: isAdminLogin
-      };
-      
-      login(userData);
-      
-      toast({
-        title: type === 'login' ? t('welcome.back') : "Registration successful!",
-        description: isAdminLogin ? "Redirecting to admin dashboard..." : "Redirecting to temple selection...",
+
+    try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+
+      // Validate input
+      const validated = loginSchema.parse({ email, password });
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: validated.email,
+        password: validated.password
       });
-      
-      navigate(isAdminLogin ? '/admin' : '/temples');
-    }, 1500);
+
+      if (error) throw error;
+
+      if (data.user) {
+        await refreshUser();
+        
+        // Check if user is admin
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id);
+
+        const isAdmin = roles?.some(r => r.role === 'admin') || false;
+
+        toast({
+          title: t('welcome.back'),
+          description: isAdmin ? "Redirecting to admin dashboard..." : "Redirecting to temple selection..."
+        });
+
+        navigate(isAdmin ? '/admin' : '/temples');
+      }
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid credentials",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const name = formData.get('name') as string;
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const password = formData.get('password') as string;
+
+      // Validate input
+      const validated = registerSchema.parse({ name, email, phone, password });
+
+      const redirectUrl = `${window.location.origin}/`;
+
+      const { data, error } = await supabase.auth.signUp({
+        email: validated.email,
+        password: validated.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name: validated.name,
+            phone: validated.phone
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await refreshUser();
+        
+        toast({
+          title: "Registration Successful!",
+          description: "Redirecting to temple selection..."
+        });
+
+        navigate('/temples');
+      }
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: error.message || "Could not create account",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,7 +204,7 @@ const Auth = () => {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={(e) => handleSubmit(e, 'login')} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">{t('email')}</Label>
                       <div className="relative">
@@ -154,7 +258,7 @@ const Auth = () => {
                 </TabsContent>
 
                 <TabsContent value="register">
-                  <form onSubmit={(e) => handleSubmit(e, 'register')} className="space-y-4">
+                  <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">{t('full.name')}</Label>
                       <div className="relative">
