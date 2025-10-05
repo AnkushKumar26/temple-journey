@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   isAdmin: boolean;
 }
 
@@ -23,26 +25,98 @@ interface Booking {
 
 interface UserContextType {
   user: User | null;
+  session: Session | null;
   bookings: Booking[];
-  login: (userData: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   addBooking: (booking: Omit<Booking, 'id' | 'qrCode' | 'createdAt'>) => void;
   updateBooking: (id: string, updates: Partial<Booking>) => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData: User) => {
-    setUser(userData);
-  };
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile and role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
 
-  const logout = () => {
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id);
+
+          const isAdmin = roles?.some(r => r.role === 'admin') || false;
+
+          setUser({
+            id: session.user.id,
+            name: profile?.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            phone: profile?.phone,
+            isAdmin
+          });
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        
+        setTimeout(async () => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id);
+
+          const isAdmin = roles?.some(r => r.role === 'admin') || false;
+
+          setUser({
+            id: session.user.id,
+            name: profile?.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            phone: profile?.phone,
+            isAdmin
+          });
+          setLoading(false);
+        }, 0);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
     setBookings([]);
   };
 
@@ -70,12 +144,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <UserContext.Provider value={{
       user,
+      session,
       bookings,
-      login,
       logout,
       addBooking,
       updateBooking,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      loading
     }}>
       {children}
     </UserContext.Provider>

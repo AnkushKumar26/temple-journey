@@ -8,10 +8,25 @@ import { ArrowLeft, User, Mail, Phone, Lock, Sparkles } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const profileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().optional(),
+});
+
+const passwordSchema = z.object({
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, login } = useUser();
+  const { user } = useUser();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -28,22 +43,61 @@ const Profile = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      if (user) {
-        login({
-          ...user,
+    try {
+      if (!user) throw new Error("Not authenticated");
+
+      // Validate profile data
+      profileSchema.parse({
+        name: formData.name,
+        phone: formData.phone,
+      });
+
+      // Update profile in Supabase
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
           name: formData.name,
-          email: formData.email,
-          phone: formData.phone
+          phone: formData.phone,
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // If password fields are filled, update password
+      if (formData.newPassword && formData.confirmPassword) {
+        passwordSchema.parse({
+          newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword,
         });
+
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: formData.newPassword
+        });
+
+        if (passwordError) throw passwordError;
       }
+
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
-    }, 1000);
+
+      // Clear password fields
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -123,10 +177,10 @@ const Profile = () => {
                         placeholder="your@email.com"
                         className="pl-10"
                         value={formData.email}
-                        onChange={(e) => handleChange('email', e.target.value)}
-                        required
+                        disabled
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                   </div>
 
                   <div className="space-y-2">
@@ -146,25 +200,10 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Password Change */}
                 <div className="space-y-4 border-t pt-6">
                   <h3 className="text-lg font-semibold">Change Password</h3>
+                  <p className="text-sm text-muted-foreground">Leave blank if you don't want to change your password</p>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        placeholder="Enter current password"
-                        className="pl-10"
-                        value={formData.currentPassword}
-                        onChange={(e) => handleChange('currentPassword', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">New Password</Label>
