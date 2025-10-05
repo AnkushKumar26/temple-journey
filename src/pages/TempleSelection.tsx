@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Star, Sparkles } from "lucide-react";
 import somnathTemple from "@/assets/somnath-temple.jpg";
 import dwarkaTemple from "@/assets/dwarka-temple.jpg";
-import badrinathTemple from "@/assets/badrinath-temple.jpg";
 import ambajiTemple from "@/assets/ambaji-temple.jpg";
 import pavagardhTemple from "@/assets/pavagadh-temple.jpg";
 
@@ -27,15 +26,6 @@ const temples = [
     image: dwarkaTemple,
     rating: 4.9,
     features: ["Char Dham", "Krishna Temple", "Divine Architecture"]
-  },
-  {
-    id: "badrinath",
-    name: "Badrinath Temple",
-    location: "Uttarakhand, India",
-    description: "High altitude temple dedicated to Lord Vishnu, nestled in the Himalayas and part of the sacred Char Dham Yatra.",
-    image: badrinathTemple,
-    rating: 4.7,
-    features: ["Himalayan Temple", "Char Dham", "High Altitude"]
   },
   {
     id: "ambaji",
