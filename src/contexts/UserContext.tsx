@@ -45,35 +45,38 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
-        
+
         if (session?.user) {
-          // Fetch user profile and role
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          // Defer Supabase calls to avoid deadlocks inside the callback
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user!.id)
+              .single();
 
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id);
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user!.id);
 
-          const isAdmin = roles?.some(r => r.role === 'admin') || false;
+            const isAdmin = roles?.some(r => r.role === 'admin') || false;
 
-          setUser({
-            id: session.user.id,
-            name: profile?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            phone: profile?.phone,
-            isAdmin
-          });
+            setUser({
+              id: session.user!.id,
+              name: profile?.name || session.user!.email?.split('@')[0] || 'User',
+              email: session.user!.email || '',
+              phone: profile?.phone,
+              isAdmin
+            });
+            setLoading(false);
+          }, 0);
         } else {
           setUser(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
