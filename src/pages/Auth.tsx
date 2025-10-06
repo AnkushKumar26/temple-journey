@@ -62,7 +62,9 @@ const Auth = () => {
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message === "Invalid login credentials" 
+          ? "Invalid email or password. Please check your credentials and try again."
+          : error.message,
         variant: "destructive",
       });
     } finally {
