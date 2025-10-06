@@ -101,7 +101,7 @@ const Auth = () => {
 
       toast({
         title: "Registration successful!",
-        description: "Redirecting to temple selection...",
+        description: "Welcome! You can now book your temple visit.",
       });
     } catch (error: any) {
       toast({
