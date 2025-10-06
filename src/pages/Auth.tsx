@@ -48,17 +48,28 @@ const Auth = () => {
     try {
       loginSchema.parse({ email, password });
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      // Check if user is admin
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id);
+
+      const isAdmin = roles?.some(r => r.role === 'admin') || false;
+
       toast({
         title: t('welcome.back'),
         description: "Redirecting...",
       });
+
+      // Redirect based on role
+      navigate(isAdmin ? '/admin' : '/temples');
     } catch (error: any) {
       toast({
         title: "Login failed",
